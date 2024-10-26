@@ -1,36 +1,44 @@
-import json
-from flask import Flask, render_template, Blueprint, current_app
-from database.select import select_list, select_dict
-
+from flask import render_template, Blueprint, current_app, request
+from database.select import select_dict
+from sem4.access import group_required
 
 blueprint_query = Blueprint('query_bp', __name__, template_folder='templates')
 
-# app = Flask(__name__)
-#
-#
-# # f = open('../data/db.config.json')
-# # db_config = f.read()
-# # print(db_config)
-# # f.close()
-#
-# # template with
-# with open('../data/db.config.json') as f:
-#     app.config['db_config'] = json.load(f)
-#
-#     # db_config = json.load(f)
-#     # print(db_config)
 
-
-@blueprint_query.route('/')
-def query_index():
-    prod_category = 1
-    _sql = f"""select prod_name, prod_measure, prod_price from product
-               where prod_category = {prod_category}"""
-    products = select_dict(current_app.config['db_config'], _sql)
-    # result = select_list(db_config, _sql)
-
-    if products:
-        prod_title = 'Резульатта из БД'
-        return render_template('dynamic.html', prod_title = prod_title, products = products)
+@blueprint_query.route('/category', methods=['GET', 'POST'])
+@group_required
+def query_category():
+    if request.method == 'POST':
+        category = request.form['category']
+        _sql = f"""select * from product
+                   where prod_category = {category}"""
+        result = select_dict(current_app.config['db_config'], _sql)
+        if result:
+            prod_title = f'Все записи по категории {category}'
+            print(result)
+            return render_template('dynamic.html', prod_title=prod_title, products=result)
+        else:
+            return 'Результат не получен'
     else:
-        return 'Результат не получен'
+        return render_template('query_category.html')
+
+
+@blueprint_query.route('/cost', methods=['GET', 'POST'])
+@group_required
+def query_cost():
+    print(1)
+    if request.method == 'POST':
+        cost = request.form['cost']
+        print(cost)
+        _sql = f"""select * from product
+                   where prod_price = {cost}"""
+        result = select_dict(current_app.config['db_config'], _sql)
+        print(result)
+        if result:
+            prod_title = f'Все записи по цене {cost}'
+            print(result)
+            return render_template('dynamic.html', prod_title=prod_title, products=result)
+        else:
+            return 'Результат не получен'
+    else:
+        return render_template('query_cost.html')
